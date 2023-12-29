@@ -30,7 +30,6 @@ class _AuthScreenState extends State<AuthScreen> {
           email: _enteredEmail,
           password: _enteredPassword,
         );
-        print(userCredentials);
         return;
       }
 
@@ -40,7 +39,6 @@ class _AuthScreenState extends State<AuthScreen> {
           email: _enteredEmail,
           password: _enteredPassword,
         );
-        print(userCredential);
         return;
       }
     } on FirebaseAuthException catch (error) {
@@ -56,8 +54,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     _form.currentState!.save();
-    print(_enteredEmail);
-    print(_enteredPassword);
   }
 
   String? _validateEmailInput(String? value) {
