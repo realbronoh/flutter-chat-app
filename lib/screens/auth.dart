@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chat_app/widgets/user_image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,6 +20,7 @@ class _AuthScreenState extends State<AuthScreen> {
   var _isLogin = true;
   String _enteredEmail = '';
   String _enteredPassword = '';
+  String _enteredUsername = '';
   File? _selectedImage;
   var _isAthenticating = false;
 
@@ -48,7 +50,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!_isLogin) {
         // sign users up
-        final userCredential = await _firebase.createUserWithEmailAndPassword(
+        final userCredentials = await _firebase.createUserWithEmailAndPassword(
           email: _enteredEmail,
           password: _enteredPassword,
         );
@@ -66,10 +68,20 @@ class _AuthScreenState extends State<AuthScreen> {
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('user_images')
-            .child('${userCredential.user!.uid}.jpg');
+            .child('${userCredentials.user!.uid}.jpg');
         await storageRef.putFile(_selectedImage!);
         final imageUrl = await storageRef.getDownloadURL();
-        print(imageUrl);
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredentials.user!.uid)
+            .set(
+          {
+            'username': _enteredUsername,
+            'email': _enteredEmail,
+            'image_url': imageUrl,
+          },
+        );
         return;
       }
     } on FirebaseAuthException catch (error) {
@@ -101,6 +113,13 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _validatePasswordInput(String? value) {
     if (value == null || value.trim().length < 6) {
       return 'Password must be at least 6 characters long.';
+    }
+    return null;
+  }
+
+  String? _validateUsernameInput(String? value) {
+    if (value == null || value.isEmpty || value.trim().length < 4) {
+      return 'Please enter at least 4 characters.';
     }
     return null;
   }
@@ -160,6 +179,16 @@ class _AuthScreenState extends State<AuthScreen> {
                               _enteredPassword = value!;
                             },
                           ),
+                          if (!_isLogin)
+                            TextFormField(
+                              decoration:
+                                  const InputDecoration(labelText: 'Username'),
+                              enableSuggestions: false,
+                              validator: _validateUsernameInput,
+                              onSaved: (value) {
+                                _enteredUsername = value!;
+                              },
+                            ),
                           const SizedBox(height: 12),
                           if (_isAthenticating)
                             const CircularProgressIndicator(),
